@@ -7,6 +7,7 @@ package br.com.ifba.login.view;
 
 import javax.swing.ImageIcon;
 import java.awt.Image;
+import br.com.ifba.cadastro.view.TelaCadastroUsuario;
 
 
 /**
@@ -44,6 +45,7 @@ public class LoginView extends javax.swing.JFrame {
         resultado = new javax.swing.JLabel();
         txtLogin1 = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -65,6 +67,13 @@ public class LoginView extends javax.swing.JFrame {
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/br/com/ifba/login/imagens/IFBA_MARCA_vertical-01.png"))); // NOI18N
         jLabel1.setText("jLabel1");
         jLabel1.setPreferredSize(new java.awt.Dimension(100, 100));
+
+        jLabel2.setText("Não tenho conta? Cadastre-se");
+        jLabel2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel2MouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -89,11 +98,13 @@ public class LoginView extends javax.swing.JFrame {
                                 .addGroup(layout.createSequentialGroup()
                                     .addGap(18, 18, 18)
                                     .addComponent(labelSenha)))
-                            .addComponent(txtLogin1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addComponent(resultado)
-                                .addGap(20, 20, 20)))))
-                .addContainerGap(1632, Short.MAX_VALUE))
+                            .addComponent(txtLogin1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(201, 201, 201)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel2)
+                            .addComponent(resultado))))
+                .addContainerGap(1549, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -112,9 +123,11 @@ public class LoginView extends javax.swing.JFrame {
                 .addComponent(txtSenha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnEntrar)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel2)
+                .addGap(10, 10, 10)
                 .addComponent(resultado)
-                .addContainerGap(3838, Short.MAX_VALUE))
+                .addContainerGap(3818, Short.MAX_VALUE))
         );
 
         pack();
@@ -125,10 +138,23 @@ public class LoginView extends javax.swing.JFrame {
         String senhaDigitada = new String(txtSenha.getPassword());
         
         resultado.setText(
-                "Login digitado: " + loginDigitado + "<br>" +
-                 "Senha digitada: " +senhaDigitada + "</html>"
+        "<html>" +
+        "Login digitado: " + loginDigitado + "<br>" +
+        "Senha digitada: " + senhaDigitada +
+        "</html>"
+        );
+        
+        javax.swing.JOptionPane.showMessageDialog(
+        this,
+        "Login: " + loginDigitado + "\nSenha: " + senhaDigitada
         );
     }//GEN-LAST:event_btnEntrarActionPerformed
+
+    private void jLabel2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel2MouseClicked
+        TelaCadastroUsuario telaCadastro = new TelaCadastroUsuario();
+        telaCadastro.setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_jLabel2MouseClicked
 
     /**
      * @param args the command line arguments
@@ -159,6 +185,7 @@ public class LoginView extends javax.swing.JFrame {
     private javax.swing.JLabel Login;
     private javax.swing.JButton btnEntrar;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel labelSenha;
     private javax.swing.JLabel resultado;
     private javax.swing.JLabel titulo;
