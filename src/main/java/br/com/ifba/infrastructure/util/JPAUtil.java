@@ -8,6 +8,9 @@ import jakarta.persistence.Persistence;
  * Ponto unico de acesso ao JPA: cria o EntityManagerFactory uma unica vez e
  * fornece um EntityManager novo para quem precisar. Quem pede o EntityManager
  * e responsavel por fecha-lo (finally { em.close(); }).
+ *
+ * A unidade de persistencia pode ser trocada pela propriedade de sistema
+ * pgcd.persistence.unit (os testes usam pgcdTestPU, com H2 em memoria).
  */
 public final class JPAUtil {
 
@@ -19,10 +22,14 @@ public final class JPAUtil {
     private JPAUtil() {
     }
 
+    /** Nome da unidade de persistencia em uso (persistence.xml). */
+    public static String getUnidade() {
+        return System.getProperty(PROPRIEDADE_UNIDADE, UNIDADE_PADRAO);
+    }
+
     private static synchronized EntityManagerFactory getFactory() {
         if (factory == null) {
-            String unidade = System.getProperty(PROPRIEDADE_UNIDADE, UNIDADE_PADRAO);
-            factory = Persistence.createEntityManagerFactory(unidade);
+            factory = Persistence.createEntityManagerFactory(getUnidade());
         }
         return factory;
     }

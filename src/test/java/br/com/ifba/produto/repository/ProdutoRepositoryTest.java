@@ -6,18 +6,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import br.com.ifba.infrastructure.util.JPAUtil;
+import br.com.ifba.infrastructure.util.MigracaoBanco;
 import br.com.ifba.produto.entity.Produto;
 import br.com.ifba.produto.exception.ProdutoNaoEncontradoException;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ProdutoRepositoryTest {
 
     private final ProdutoRepository repository = new ProdutoRepository();
+
+    /** O schema do H2 e criado pelas mesmas migrations da aplicacao (nao pelo Hibernate). */
+    @BeforeAll
+    static void migrarBanco() {
+        MigracaoBanco.migrar();
+    }
 
     @BeforeEach
     void limparTabela() {
