@@ -1,16 +1,16 @@
 package br.com.ifba.produto.view;
 
-import br.com.ifba.infrastructure.util.JPAUtil;
+import br.com.ifba.infrastructure.exception.EntidadeNaoEncontradaException;
+import br.com.ifba.infrastructure.exception.PersistenciaException;
+import br.com.ifba.produto.dao.ProdutoDao;
+import br.com.ifba.produto.dao.ProdutoIDao;
 import br.com.ifba.produto.entity.Produto;
-import br.com.ifba.produto.exception.ProdutoNaoEncontradoException;
-import br.com.ifba.produto.repository.ProdutoRepository;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JButton;
@@ -21,16 +21,21 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.table.DefaultTableModel;
 
-/** Tela de CRUD de produtos (cadastrar, listar, buscar, editar, excluir). */
+/**
+ * Tela de CRUD de produtos (cadastrar, listar, buscar, editar, excluir).
+ *
+ * A tela nao conhece o JPA (nem transacao, nem sessao): ela apenas chama o DAO
+ * (dao.save, dao.update, dao.delete, dao.findAll, dao.findByNome) e trata a
+ * excecao de dominio (PersistenciaException) que ele lanca quando algo falha.
+ */
 public class TelaProdutos extends JFrame {
 
     private static final Logger LOGGER = Logger.getLogger(TelaProdutos.class.getName());
 
-    private final ProdutoRepository repository = new ProdutoRepository();
+    private final ProdutoIDao dao = new ProdutoDao();
 
     private final JTextField txtBusca = new JTextField(20);
     private final JTextField txtNome = new JTextField();
@@ -52,16 +57,9 @@ public class TelaProdutos extends JFrame {
     public TelaProdutos() {
         super("Produtos - PGCD");
         montarTela();
-        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                JPAUtil.close();
-                dispose();
-                System.exit(0);
-            }
-        });
-        carregarTabela(() -> repository.listar());
+        // Ao fechar, a aplicacao encerra e o shutdown hook do main fecha o JPA.
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        carregarTabela(dao::findAll);
     }
 
     private void montarTela() {
@@ -105,7 +103,7 @@ public class TelaProdutos extends JFrame {
         btnBuscar.addActionListener(e -> buscar());
         btnTodos.addActionListener(e -> {
             txtBusca.setText("");
-            carregarTabela(() -> repository.listar());
+            carregarTabela(dao::findAll);
         });
         btnCadastrar.addActionListener(e -> cadastrar());
         btnEditar.addActionListener(e -> editar());
@@ -126,14 +124,14 @@ public class TelaProdutos extends JFrame {
     private void cadastrar() {
         try {
             Produto produto = lerFormulario();
-            repository.salvar(produto);
+            dao.save(produto);
             JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!");
             limparFormulario();
-            carregarTabela(() -> repository.listar());
+            carregarTabela(dao::findAll);
         } catch (IllegalArgumentException e) {
             avisar(e.getMessage());
-        } catch (RuntimeException e) {
-            erroDeBanco("cadastrar o produto", e);
+        } catch (PersistenciaException e) {
+            erro("cadastrar o produto", e);
         }
     }
 
@@ -145,18 +143,18 @@ public class TelaProdutos extends JFrame {
         try {
             Produto produto = lerFormulario();
             produto.setId(idSelecionado);
-            repository.atualizar(produto);
+            dao.update(produto);
             JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!");
             limparFormulario();
-            carregarTabela(() -> repository.listar());
-        } catch (ProdutoNaoEncontradoException e) {
+            carregarTabela(dao::findAll);
+        } catch (EntidadeNaoEncontradaException e) {
             avisar(e.getMessage());
             limparFormulario();
-            carregarTabela(() -> repository.listar());
+            carregarTabela(dao::findAll);
         } catch (IllegalArgumentException e) {
             avisar(e.getMessage());
-        } catch (RuntimeException e) {
-            erroDeBanco("atualizar o produto", e);
+        } catch (PersistenciaException e) {
+            erro("atualizar o produto", e);
         }
     }
 
@@ -171,16 +169,18 @@ public class TelaProdutos extends JFrame {
             return;
         }
         try {
-            repository.excluir(idSelecionado);
+            Produto produto = new Produto();
+            produto.setId(idSelecionado);
+            dao.delete(produto);
             JOptionPane.showMessageDialog(this, "Produto excluído com sucesso!");
-        } catch (ProdutoNaoEncontradoException e) {
+        } catch (EntidadeNaoEncontradaException e) {
             avisar(e.getMessage());
-        } catch (RuntimeException e) {
-            erroDeBanco("excluir o produto", e);
+        } catch (PersistenciaException e) {
+            erro("excluir o produto", e);
             return;
         }
         limparFormulario();
-        carregarTabela(() -> repository.listar());
+        carregarTabela(dao::findAll);
     }
 
     private void buscar() {
@@ -189,20 +189,20 @@ public class TelaProdutos extends JFrame {
             avisar("Digite parte do nome para buscar.");
             return;
         }
-        carregarTabela(() -> repository.buscarPorNome(termo));
+        carregarTabela(() -> dao.findByNome(termo));
     }
 
     // ---------- apoio ----------
 
-    private void carregarTabela(java.util.function.Supplier<List<Produto>> consulta) {
+    private void carregarTabela(Supplier<List<Produto>> consulta) {
         try {
             List<Produto> produtos = consulta.get();
             modelo.setRowCount(0);
             for (Produto p : produtos) {
                 modelo.addRow(new Object[]{p.getId(), p.getNome(), p.getFornecedor(), p.getPreco(), p.getEstoque()});
             }
-        } catch (RuntimeException e) {
-            erroDeBanco("carregar os produtos", e);
+        } catch (PersistenciaException e) {
+            erro("carregar os produtos", e);
         }
     }
 
@@ -255,14 +255,10 @@ public class TelaProdutos extends JFrame {
         JOptionPane.showMessageDialog(this, mensagem, "Atenção", JOptionPane.WARNING_MESSAGE);
     }
 
-    private void erroDeBanco(String acao, RuntimeException e) {
+    private void erro(String acao, PersistenciaException e) {
         LOGGER.log(Level.SEVERE, "Falha ao " + acao, e);
         JOptionPane.showMessageDialog(this,
-                "Não foi possível " + acao + ". Verifique a conexão com o banco e tente novamente.",
+                "Não foi possível " + acao + ".\n" + e.getMessage(),
                 "Erro", JOptionPane.ERROR_MESSAGE);
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new TelaProdutos().setVisible(true));
     }
 }
